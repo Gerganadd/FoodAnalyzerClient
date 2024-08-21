@@ -1,5 +1,7 @@
 package bg.sofia.uni.fmi.mjt.client;
 
+import bg.sofia.uni.fmi.mjt.client.commands.Command;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -8,88 +10,55 @@ import java.nio.channels.Channels;
 import java.nio.channels.SocketChannel;
 import java.util.Scanner;
 
-import static bg.sofia.uni.fmi.mjt.client.CommandType.DISCONNECT;
-import static bg.sofia.uni.fmi.mjt.client.CommandType.UNKNOWN;
+import static bg.sofia.uni.fmi.mjt.client.commands.CommandType.DISCONNECT;
+import static bg.sofia.uni.fmi.mjt.client.commands.CommandType.UNKNOWN;
+import static bg.sofia.uni.fmi.mjt.client.commands.CommandType.HELP;
 
 public class Client {
-    private static final String MENU = """
-            Commands:
-            help
-            disconnect
-            get-food <name>
-            get-food-report <fsdId>
-            get-food-by-barcode --img=<absoluteImagePath>
-            get-food-by-barcode --code=<gtin/upcCode>
-            get-food-by-barcode --img=<absoluteImagePath> --code=<gtin/upcCode>
-            get-food-by-barcode --code=<gtin/upcCode> --img=<absoluteImagePath>
-            """;
-
-    private static final String MENU_OPTIONS_DESCRIPTION = """
-            disconnect -> disconnect you from the server
-            get-food <name> -> return information about all foods which match of given name
-            get-food-report <fsdId> -> return information about food with given id (fsdId is specific for each food)
-            get-food-by-barcode --code=<gtin/upcCode> -> return information about food with given gtin/upc code
-            get-food-by-barcode --img=<absoluteImagePath> -> return information about food with given gtin/upc code from image
-            get-food-by-barcode --img=<absoluteImagePath> --code=<gtin/upcCode> -> same as the above two but will prioritize the code value
-            """;
     private static final int SERVER_PORT = 8888;
+    private static final String HOST_NAME = "localhost";
+    private static final String CHARSET = "UTF-8";
 
     public static void main(String[] args) {
-
         try (SocketChannel socketChannel = SocketChannel.open();
-             BufferedReader reader = new BufferedReader(Channels.newReader(socketChannel, "UTF-8"));
-             PrintWriter writer = new PrintWriter(Channels.newWriter(socketChannel, "UTF-8"), true);
+             BufferedReader reader = new BufferedReader(Channels.newReader(socketChannel, CHARSET));
+             PrintWriter writer = new PrintWriter(Channels.newWriter(socketChannel, CHARSET), true);
              Scanner scanner = new Scanner(System.in)) {
 
-            socketChannel.connect(new InetSocketAddress("localhost", SERVER_PORT));
+            socketChannel.connect(new InetSocketAddress(HOST_NAME, SERVER_PORT));
 
             System.out.println("Connected to the server.");
-            printMenu();
+            Command.printMenu();
 
             while (true) {
                 System.out.print("Enter command: ");
-                String message = scanner.nextLine(); // read a line from the console
+                String consoleInput = scanner.nextLine(); // read a line from the console
 
-                CommandType command = Command.parse(message);
+                Command command = new Command(consoleInput);
 
-                while (command == UNKNOWN) {
-                    System.out.println("Unknown command! Please insert correct command.");
-                    //printMenu();
+                while (command.getType() == UNKNOWN) {
+                    System.out.println("Unknown command! For more information enter: help");
 
-                    message = scanner.nextLine();
-                    command = Command.parse(message);
-
-                    if (command.getText().equals("help")) {
-                        printMenuDescription();
-
-                        message = scanner.nextLine();
-                        command = Command.parse(message);
-                    }
+                    consoleInput = scanner.nextLine();
+                    command.update(consoleInput);
                 }
 
-                if (command == DISCONNECT) {
-                    // to-do ?
+                if (command.getType() == DISCONNECT) {
                     System.out.println("Disconnected from the server");
                     break;
                 }
+                if (command.getType() == HELP) {
+                    command.printDescription();
+                    continue;
+                }
 
-                System.out.println("Sending message <" + command + " " + message + "> to the server...");
-
-                writer.println(message);
+                writer.println(consoleInput);
 
                 String reply = reader.readLine(); // read the response from the server
-                System.out.println("The server replied <" + reply + ">");
+                System.out.println(reply);
             }
         } catch (IOException e) {
             throw new RuntimeException("There is a problem with the network communication", e);
         }
-    }
-
-    private static void printMenu() { //? may move it
-        System.out.println(MENU);
-    }
-
-    private static void printMenuDescription() {
-        System.out.println(MENU_OPTIONS_DESCRIPTION);
     }
 }
