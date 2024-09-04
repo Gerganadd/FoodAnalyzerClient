@@ -48,17 +48,24 @@ public class Client {
                     break;
                 }
                 if (command.getType() == HELP) {
-                    command.printDescription();
+                    command.printMenuDescription();
                     continue;
                 }
 
                 writer.println(consoleInput);
 
                 String reply = reader.readLine(); // read the response from the server
-                System.out.println(reply);
+                formatServerReply(reply);
             }
         } catch (IOException e) {
-            throw new RuntimeException("There is a problem with the network communication", e);
+            System.out.println("Unable to connect to the server. Try again later.");
         }
+    }
+
+    private static void formatServerReply(String reply) {
+        String result = reply.replaceAll("@", "\n");
+        result = result.replaceAll("#", "\n");
+
+        System.out.println(result);
     }
 }

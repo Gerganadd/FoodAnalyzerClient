@@ -1,7 +1,5 @@
 package bg.sofia.uni.fmi.mjt.client.commands;
 
-import static bg.sofia.uni.fmi.mjt.client.commands.CommandType.*;
-
 public class Command {
     private static final String MENU = """
             Commands:
@@ -25,11 +23,8 @@ public class Command {
             """;
 
     private CommandType type;
-    private String argument; // ? change name
 
     public Command(String text) {
-        argument = text;
-
         String commandName = text.split(" ")[0].trim();
         type = CommandType.getValueOf(commandName);
     }
@@ -38,12 +33,8 @@ public class Command {
         System.out.println(MENU);
     }
 
-    public void printDescription() {
+    public void printMenuDescription() {
         System.out.println(MENU_OPTIONS_DESCRIPTION);
-    }
-
-    public String getText() {
-        return argument;
     }
 
     public CommandType getType() {
@@ -54,8 +45,6 @@ public class Command {
         if (text == null || text.isBlank()) {
             return;
         }
-
-        argument = text;
 
         String commandName = text.split(" ")[0].trim();
         type = CommandType.getValueOf(commandName);
